@@ -34,6 +34,7 @@ unix {
     INSTALLS += target
 }
 
+
 DESTDIR = $${LIBQCV_ROOT}/bin
 
 OBJECTS_DIR = $${LIBQCV_ROOT}/tmp/$${TARGET}/obj

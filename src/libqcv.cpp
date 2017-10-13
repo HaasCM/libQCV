@@ -135,7 +135,7 @@ namespace QCV {
     \param current the current QImage format
     \return the closest compatible QImage format
   */
-  QImage::Format findClosestFormat(const QImage::Format current) {
+  QImage::Format getClosestFormat(const QImage::Format current) {
     switch(current) {
       case QImage::Format_Invalid:
         return QImage::Format_ARGB32;
@@ -150,7 +150,8 @@ namespace QCV {
       case QImage::Format_ARGB32_Premultiplied:
         return current;
 
-      #if QT_VERSION > 0x040400
+#if QT_VERSION > 0x040400
+
       case QImage::Format_RGB16:
         return QImage::Format_RGB32;
 
@@ -165,14 +166,15 @@ namespace QCV {
       case QImage::Format_RGB444:
       case QImage::Format_RGB888:
         return QImage::Format_RGB888;
-      #endif
+#endif
 
-      #if QT_VERSION > 0x050200
+#if QT_VERSION > 0x050200
+
       case QImage::Format_RGBX8888:
       case QImage::Format_RGBA8888:
       case QImage::Format_RGBA8888_Premultiplied:
         return current;
-      #endif
+#endif
 
       case QImage::Format_BGR30:
       case QImage::Format_A2BGR30_Premultiplied:
@@ -190,12 +192,65 @@ namespace QCV {
   }
 
   /*!
+    \brief Function to get endian dependedent color order
+    \return returns the color order depending on system byte order
+  */
+  ColorOrder getEndianDependentColorOrder() {
+    if(Q_BYTE_ORDER == Q_BIG_ENDIAN) {
+      return ColorOrder::ARGB;
+    } else {
+      return ColorOrder::BGRA;
+    }
+  }
+
+  ColorOrder getColorOrderFor(const QImage::Format &format) {
+    switch(format) {
+      case QImage::Format_Indexed8:
+        break;
+
+      case QImage::Format_RGB32:
+      case QImage::Format_ARGB32:
+      case QImage::Format_ARGB32_Premultiplied:
+        return getEndianDependentColorOrder();
+#if QT_VERSION > 0x040400
+
+      case QImage::Format_RGB888:
+        return ColorOrder::RGBA;
+#endif
+#if QT_VERSION > 0x050200
+
+      case QImage::Format_RGBX8888:
+      case QImage::Format_RGBA8888:
+      case QImage::Format_RGBA8888_Premultiplied:
+        return ColorOrder::RGBA;
+#endif
+#if QT_VERSION > 0x050500
+
+      case QImage::Format_Alpha8:
+      case QImage::Format_Grayscale8:
+#endif
+
+      default:
+        return ColorOrder::RGBA;
+    }
+  }
+
+  /*!
     \brief Function to convert a QImage to a cv::Mat
     \param image reference to the QImage to convert
     \param sharedBuffer boolean to pass if the buffers should be shared
     \return returns an OpenCV Matrix
   */
   cv::Mat QCV::qImageToCV(const QImage &image, bool sharedBuffer) {
+    if(image.isNull()) {
+      return cv::Mat();
+    }
+
+    QImage::Format format = getClosestFormat(image.format());
+    QImage localImage = (format == image.format()) ? image : image.convertToFormat(format);
+
+    ColorOrder order;
+
 
   }
 
@@ -228,5 +283,4 @@ namespace QCV {
   QPixmap QCV::cvToQPixmap(const cv::Mat &image, bool sharedBuffer) {
 
   }
-}
 
